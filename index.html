@@ -1,0 +1,206 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Users, Sprout, History, TrendingUp } from 'lucide-react';
+
+const FarmSkyPlatform = () => {
+  const [loanListings, setLoanListings] = useState([]);
+  const [investmentPortfolio, setInvestmentPortfolio] = useState([]);
+  const [userInfo, setUserInfo] = useState(null);
+
+  useEffect(() => {
+    fetchLoanListings();
+    fetchInvestmentPortfolio();
+    fetchUserInfo();
+  }, []);
+
+  const fetchLoanListings = async () => {
+    const response = await fetch('/loans');
+    const data = await response.json();
+    setLoanListings(data);
+  };
+
+  const fetchInvestmentPortfolio = async () => {
+    const userId = userInfo?.user_id;
+    if (userId) {
+      const response = await fetch(`/investors/${userId}/wallet`);
+      const data = await response.json();
+      setInvestmentPortfolio(data.investments);
+    }
+  };
+
+  const fetchUserInfo = async () => {
+    const response = await fetch('/users/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: 'example@farmsky.com',
+        password: 'password123'
+      })
+    });
+    const data = await response.json();
+    setUserInfo(data);
+  };
+
+  const renderLoanCard = (loan) => (
+    <Card key={loan.id} className="mb-4 bg-farmsky-blue text-white">
+      <CardContent className="p-6">
+        {/* Loan details */}
+      </CardContent>
+    </Card>
+  );
+
+  const renderPortfolioCard = (investment) => (
+    <Card key={investment.id} className="mb-4 bg-farmsky-blue text-white">
+      {/* Investment details */}
+    </Card>
+  );
+
+  return (
+    <div className="max-w-4xl mx-auto p-4">
+      <header className="mb-6 bg-farmsky-blue text-white p-4">
+        <h1 className="text-3xl font-bold">FarmSky</h1>
+        <p className="text-gray-200">Connect farmers with investors for sustainable agriculture</p>
+        <nav className="mt-4">
+          <ul className="flex space-x-4">
+            <li><a href="/" className="text-white hover:text-gray-300">Browse Loans</a></li>
+            <li><a href="/portfolio" className="text-white hover:text-gray-300">My Portfolio</a></li>
+            <li><a href="/register" className="text-white hover:text-gray-300">Register</a></li>
+            <li><a href="/login" className="text-white hover:text-gray-300">Login</a></li>
+          </ul>
+        </nav>
+      </header>
+
+      <div className="space-y-4">
+        <div>
+          <Alert className="bg-farmsky-blue text-white">
+            <AlertDescription>
+              All loans are verified and backed by farm assets
+            </AlertDescription>
+          </Alert>
+          {loanListings.map(loan => renderLoanCard(loan))}
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold mb-4 text-farmsky-blue">My Portfolio</h2>
+          <div className="grid gap-4">
+            {investmentPortfolio.map(investment => renderPortfolioCard(investment))}
+          </div>
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold mb-4 text-farmsky-blue">Register</h2>
+          <RegisterForm />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold mb-4 text-farmsky-blue">Login</h2>
+          <LoginForm />
+          <div className="mt-4 text-right">
+            <Button as="a" href="/login" variant="link" className="text-farmsky-blue hover:text-gray-500">Already have an account?</Button>
+          </div>
+        </div>
+      </div>
+
+      <footer className="mt-8 text-center text-gray-600">
+        &copy; 2023 FarmSky. All rights reserved.
+      </footer>
+    </div>
+  );
+};
+
+const RegisterForm = () => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isFarmer, setIsFarmer] = useState(false);
+  const [isInvestor, setIsInvestor] = useState(false);
+  const [profilePicture, setProfilePicture] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('email', email);
+    formData.append('password', password);
+    formData.append('is_farmer', isFarmer);
+    formData.append('is_investor', isInvestor);
+    formData.append('profile_picture', profilePicture);
+
+    const response = await fetch('/users', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await response.json();
+    if (response.ok) {
+      alert('User registered successfully!');
+    } else {
+      alert(`Error: ${data.error}`);
+    }
+  };
+
+  return (
+    <Card className="max-w-md mx-auto bg-farmsky-blue text-white">
+      <CardHeader>
+        <CardTitle>Register</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit}>
+          {/* Registration form fields */}
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
+
+const LoginForm = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const response = await fetch('/users/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email,
+        password
+      })
+    });
+    const data = await response.json();
+    if (response.ok) {
+      alert(`Logged in successfully! User ID: ${data.user_id}`);
+    } else {
+      alert(`Error: ${data.error}`);
+    }
+  };
+
+  return (
+    <Card className="max-w-md mx-auto bg-farmsky-blue text-white">
+      <CardHeader>
+        <CardTitle>Login</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit}>
+          {/* Login form fields */}
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
+
+const Checkbox = ({ id, checked, onChange }) => (
+  <div className="flex items-center">
+    <input
+      type="checkbox"
+      id={id}
+      checked={checked}
+      onChange={onChange}
+      className="h-4 w-4 text-farmsky-blue focus:ring-farmsky-blue border-gray-300 rounded"
+    />
+  </div>
+);
+
+export default FarmSkyPlatform;
